@@ -1,0 +1,69 @@
+# Custom oplus vars
+OPLUS_BUILD_PROJECT=oplus
+VARIANT=gki
+
+. ${ROOT_DIR}/${KERNEL_DIR}/build.config.msm.kalama
+
+# Common vars
+KERNEL_BINARY=Image
+
+EXT_MODULES_MAKEFILE=${KERNEL_DIR}/Makefile.ext_modules.oplus
+EXT_MODULES="
+private/msm-oplus/arch/arm64/boot/dts/vendor/qcom/audio
+private/msm-oplus/arch/arm64/boot/dts/vendor/qcom/camera
+private/msm-oplus/arch/arm64/boot/dts/vendor/qcom/display
+private/msm-oplus/arch/arm64/boot/dts/vendor/qcom/eva
+private/msm-oplus/arch/arm64/boot/dts/vendor/qcom/mmrm
+private/msm-oplus/arch/arm64/boot/dts/vendor/qcom/video
+"
+
+FILES="
+dtbs/salami-22811-kalama-overlay-EVB.dtbo
+dtbs/salami-22811-kalama-overlay-T0.dtbo
+dtbs/salami-22811-kalama-overlay.dtbo
+dtbs/salami_overlay_common.dtbo
+dtbs/salami_overlay_common_evb.dtbo
+dtbs/wukong-21131-kalama-overlay-EVB.dtbo
+dtbs/wukong-21131-kalama-overlay.dtbo
+dtbs/kalama.dtb
+dtbs/kalamap.dtb
+dtbs/kalama-v2.dtb
+dtbs/kalamap-v2.dtb
+"
+
+function merge_dtbs() {
+  echo "  Merging vendor devicetree overlays"
+  rm -rf ${OUT_DIR}/kp-dtb ${OUT_DIR}/techpack-dtb ${OUT_DIR}/dtbs
+  mkdir ${OUT_DIR}/kp-dtb
+  mkdir ${OUT_DIR}/techpack-dtb
+  mkdir ${OUT_DIR}/dtbs
+  mv ${OUT_DIR}/arch/arm64/boot/dts/vendor/qcom/*.dtb ${OUT_DIR}/arch/arm64/boot/dts/vendor/qcom/*.dtbo ${OUT_DIR}/kp-dtb
+  mv $(find ${OUT_DIR}/arch/arm64/boot/dts/vendor/qcom/ -name "*.dtbo") ${OUT_DIR}/techpack-dtb
+  ${ROOT_DIR}/${KERNEL_DIR}/merge_dtbs.sh \
+    ${OUT_DIR}/kp-dtb \
+    ${OUT_DIR}/techpack-dtb \
+    ${OUT_DIR}/dtbs
+}
+
+append_cmd EXTRA_CMDS 'merge_dtbs'
+
+DO_NOT_STRIP_MODULES=
+
+if [ -z "$MIXED_BUILD" ]; then
+USING_PREBUILTS=
+
+MAKE_GOALS="
+$MAKE_GOALS
+${KERNEL_BINARY}
+"
+
+DEVICE_KERNEL_FILES="
+.config
+vmlinux
+System.map
+arch/arm64/boot/${KERNEL_BINARY}
+"
+FILES="$FILES
+$DEVICE_KERNEL_FILES
+"
+fi

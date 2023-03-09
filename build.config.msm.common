@@ -22,8 +22,7 @@ KLEAF_SUPPRESS_BUILD_SH_DEPRECATION_WARNING=1
 ##
 function compile_external_dtc() {
   (
-    OUT_DIR=${COMMON_OUT_DIR}/external/dtc
-    [ "${SKIP_MRPROPER}" != "1" ] && rm -rf ${OUT_DIR}
+    [ "${SKIP_MRPROPER}" != "1" ] && rm -rf ${OUT_DIR}/host
     cd ${ROOT_DIR}/external/dtc
     DTC_MAKE_ARGS=("CC=${HOSTCC}" "AR=${AR}")
     DTC_MAKE_ARGS+=("LDFLAGS=${HOSTLDFLAGS} -fuse-ld=${LD##*.} --rtlib=compiler-rt")
@@ -32,7 +31,7 @@ function compile_external_dtc() {
     # available. We want a hermetic build that doesn't rely on host tools, so make dtc build think
     #  none of these libraries are installed.
     DTC_MAKE_ARGS+=("PKG_CONFIG=false")
-    make all install "${DTC_MAKE_ARGS[@]}" NO_PYTHON=1 PREFIX=${COMMON_OUT_DIR}/host
+    make all install "${DTC_MAKE_ARGS[@]}" NO_PYTHON=1 PREFIX=${OUT_DIR}/host
   )
 }
 append_cmd PRE_DEFCONFIG_CMDS 'compile_external_dtc'
@@ -40,7 +39,7 @@ append_cmd PRE_DEFCONFIG_CMDS 'compile_external_dtc'
 ################################################################################
 ## DTB general support
 DTB_DIR=vendor/qcom
-DTC_OVERLAY_TEST_EXT=ufdt_apply_overlay
+DTC_OVERLAY_TEST_EXT=${ROOT_DIR}/prebuilts/kernel-build-tools/linux-x86/bin/ufdt_apply_overlay
 # Force /__symbols__ generation for all DTB[O]s
 DTC_FLAGS="-@"
 MAKE_GOALS+=" dtbs"
@@ -229,6 +228,10 @@ if [ -z "${KERNEL_BINARY}" ]; then
   KERNEL_BINARY=Image
 fi
 
+if [ -z "${MAKE_GOALS}" ]; then
+  MAKE_GOALS="
+fi
+
 ################################################################################
 ## DT Overlay
 LIBUFDT_PREBUILTS_BIN=tools/libufdt/utils/src
@@ -271,24 +274,3 @@ if [ -n "${EXTRA_CONFIGS}" ]; then
   done
 fi
 
-################################################################################
-## Copy prebuilt files to ${COMMON_OUT_DIR}/host/bin to be used by CI tools
-DIST_BINS="""
-build/android/merge_dtbs.py
-build/build-tools/path/linux-x86/ufdt_apply_overlay
-"""
-function copy_dist_bins() (
-  set +x
-  set -e
-  mkdir -p ${COMMON_OUT_DIR}/host/bin
-  echo "Copying binaries to host/bin"
-  for FILE in ${DIST_BINS}; do
-    if [ -f ${ROOT_DIR}/${FILE} ]; then
-      echo "  $FILE"
-      cp -p ${ROOT_DIR}/${FILE} ${COMMON_OUT_DIR}/host/bin/
-    else
-      echo "  $FILE is not a file, skipping"
-    fi
-  done
-)
-append_cmd DIST_CMDS 'copy_dist_bins'
