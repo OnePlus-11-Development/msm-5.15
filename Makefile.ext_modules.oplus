@@ -18,9 +18,6 @@ ext_modules += display-kernel/msm
 ext_modules += graphics-kernel
 ext_modules += mmrm-driver
 ext_modules += video-driver
-ext_modules += wlan/qcacld-3.0
-ext_modules += wlan/qca-wifi-host-cmn
-ext_modules += wlan/fw-api
 
 # Add any modules which have their own UAPI headers to this list.  This will
 # cause the build to run the module makefile with headers_install target.
